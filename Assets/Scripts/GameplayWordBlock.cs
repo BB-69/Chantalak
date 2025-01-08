@@ -27,7 +27,7 @@ public class GameplayWordBlock : MonoBehaviour
         currentIndex = 0;
 
         // Update the displayed word (the first word in the sequence)
-        textDisplay.text = words[currentIndex];
+        //textDisplay.text = words[currentIndex];
     }
 
     // Get current word and its associated button presses for validation

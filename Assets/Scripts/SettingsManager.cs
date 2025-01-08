@@ -76,6 +76,36 @@ public class SettingsManager : MonoBehaviour
         SceneManager.UnloadSceneAsync("MainMenu"); // Optionally unload the MainMenu scene if it's no longer needed
     }
 
+    public void ChangeSceneToResult()
+    {
+        // Set the current camera to Gameplay
+        CameraCurrent = Camera.Result;
+
+        // Load the Gameplay scene and unload the Menu scene
+        SceneManager.LoadScene("Result"); // This will load the Gameplay scene
+        SceneManager.UnloadSceneAsync("Gameplay"); // Optionally unload the MainMenu scene if it's no longer needed
+    }
+
+    public void ChangeSceneBackToGameplay()
+    {
+        // Set the current camera to Gameplay
+        CameraCurrent = Camera.Gameplay;
+
+        // Load the Gameplay scene and unload the Menu scene
+        SceneManager.LoadScene("Gameplay"); // This will load the Gameplay scene
+        SceneManager.UnloadSceneAsync("Result"); // Optionally unload the MainMenu scene if it's no longer needed
+    }
+
+    public void ChangeSceneBackToMainMenu()
+    {
+        // Set the current camera to Gameplay
+        CameraCurrent = Camera.Menu;
+
+        // Load the Gameplay scene and unload the Menu scene
+        SceneManager.LoadScene("MainMenu"); // This will load the Gameplay scene
+        SceneManager.UnloadSceneAsync("Result"); // Optionally unload the MainMenu scene if it's no longer needed
+    }
+
 
 
 

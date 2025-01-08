@@ -10,6 +10,15 @@ public class WordLoader : MonoBehaviour
 {
     public List<(string[] words, GameManager.ButtonPressed[] values)> wordList = new List<(string[], GameManager.ButtonPressed[])>();
 
+    // Define custom mappings
+    private readonly Dictionary<string, GameManager.ButtonPressed> valueMappings = new Dictionary<string, GameManager.ButtonPressed>
+    {
+        { "ครุ", GameManager.ButtonPressed.Left },
+        { "ลหุ", GameManager.ButtonPressed.Right },
+        { "left", GameManager.ButtonPressed.Left },
+        { "right", GameManager.ButtonPressed.Right }
+    };
+
     public void LoadWords(string filePath)
     {
         string[] lines = System.IO.File.ReadAllLines(filePath);
@@ -27,6 +36,16 @@ public class WordLoader : MonoBehaviour
 
     private GameManager.ButtonPressed ParseValue(string value)
     {
-        return value.Trim().ToLower() == "left" ? GameManager.ButtonPressed.Left : GameManager.ButtonPressed.Right;
+        value = value.Trim().ToLower();
+
+        if (valueMappings.TryGetValue(value, out GameManager.ButtonPressed buttonPressed))
+        {
+            return buttonPressed;
+        }
+        else
+        {
+            Debug.LogWarning($"Unrecognized value: {value}. Defaulting to Right.");
+            return GameManager.ButtonPressed.Right; // Default fallback
+        }
     }
 }

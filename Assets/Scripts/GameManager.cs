@@ -9,23 +9,23 @@ public class GameManager : MonoBehaviour
 
     [Header("UI Elements")]
     public TextMeshProUGUI scoreText;
-    public TextMeshProUGUI heartText; // Add a TextMeshProUGUI to display hearts as text
-    public GameplayWordBlock wordBlock; // Reference to the single reusable word block
-    public WordLoader wordLoader; // Reference to WordLoader
+    public TextMeshProUGUI heartText;
+    public GameplayWordBlock wordBlock;
+    public WordLoader wordLoader;
 
     [Header("Game Settings")]
     public int initialHearts = 3;
     public int baseScore = 100;
-    public float scoreIncrementInterval = 15f;
 
     private Queue<(string word, GameManager.ButtonPressed[] values)> wordQueue = new Queue<(string, GameManager.ButtonPressed[])>();
     private int currentScore = 0;
-    private int scoreIncrement = 100;
-    private int heartsRemaining;  // Track hearts as an integer
+    private int heartsRemaining;
     private bool isGameOver = false;
 
     public enum ButtonPressed { None, Left, Right }
-    private int currentWordIndex = 0;  // Track which word in the sequence is being validated
+
+    private List<ButtonPressed> userInputSequence = new List<ButtonPressed>(); // Track user's button sequence
+    private ButtonPressed[] expectedSequence; // Store the current sequence to match against
 
     private void Awake()
     {
@@ -43,8 +43,8 @@ public class GameManager : MonoBehaviour
     {
         Debug.Log("Game starting...");
         InitializeHearts();
-        wordLoader.LoadWords("Assets\\Scripts\\WordList.ini"); // Ensure words are loaded first
-        PopulateWordQueue(); // Populate the word queue from the loaded word list
+        wordLoader.LoadWords("Assets\\Scripts\\WordList.ini");
+        PopulateWordQueue();
 
         if (wordQueue.Count > 0)
         {
@@ -57,20 +57,41 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        if (isGameOver) return;
+
+        // Handle Left Button Press from Keyboard
+        if (Input.GetKeyDown(KeyCode.Z) || Input.GetKeyDown(KeyCode.LeftArrow))
+        {
+            OnLeftButtonClicked();
+        }
+
+        // Handle Right Button Press from Keyboard
+        if (Input.GetKeyDown(KeyCode.X) || Input.GetKeyDown(KeyCode.RightArrow))
+        {
+            OnRightButtonClicked();
+        }
+
+        // Handle Confirm Button Press from Keyboard
+        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.Space))
+        {
+            OnConfirmButtonClicked();
+        }
+    }
+
     private void InitializeHearts()
     {
-        heartsRemaining = initialHearts;  // Initialize heart count
-        UpdateHeartText();  // Display the heart count on the screen
+        heartsRemaining = initialHearts;
+        UpdateHeartText();
     }
 
     private void PopulateWordQueue()
     {
         foreach (var wordData in wordLoader.wordList)
         {
-            foreach (var word in wordData.words)
-            {
-                wordQueue.Enqueue((word, wordData.values));
-            }
+            var combinedWord = string.Join("", wordData.words); // Combine words into one displayable string
+            wordQueue.Enqueue((combinedWord, wordData.values));
         }
     }
 
@@ -79,10 +100,12 @@ public class GameManager : MonoBehaviour
         if (wordQueue.Count > 0)
         {
             var nextWord = wordQueue.Dequeue();
-            string combinedWord = string.Join(" ", nextWord.word);  // Combine words for display
-            Debug.Log($"Loading next word sequence: {combinedWord}");  // Show combined word sequence for debugging
-            wordBlock.Initialize(combinedWord, nextWord.values);  // Initialize word block with the combined words and values
-            currentWordIndex = 0; // Reset index for the next word sequence
+            Debug.Log($"Loading next word sequence: {nextWord.word}");
+
+            wordBlock.Initialize(nextWord.word, nextWord.values);
+
+            expectedSequence = nextWord.values; // Store expected button sequence
+            userInputSequence.Clear(); // Clear previous user input
         }
         else
         {
@@ -93,33 +116,10 @@ public class GameManager : MonoBehaviour
 
     public void HandleButtonPress(ButtonPressed button)
     {
-        Debug.Log($"Button pressed: {button}");
-
         if (isGameOver) return;
 
-        // Get the current word and its expected values
-        var currentWordData = wordBlock.GetCurrentWordData();
-        var currentWord = currentWordData.word;
-        var expectedValues = currentWordData.values;
-
-        bool isCorrect = (expectedValues[currentWordIndex] == button); // Check if the button press is correct for the current word
-
-        if (isCorrect)
-        {
-            AddScore(1);
-
-            currentWordIndex++;  // Move to the next word in the sequence
-
-            if (currentWordIndex >= currentWord.Length) // If all words in the sequence are complete
-            {
-                currentWordIndex = 0; // Reset to start with the first word
-                LoadNextWord(); // Load the next word sequence
-            }
-        }
-        else
-        {
-            LoseHeart(); // Incorrect press leads to losing a heart
-        }
+        Debug.Log($"Button pressed: {button}");
+        userInputSequence.Add(button); // Add button press to user input sequence
     }
 
     public void OnLeftButtonClicked()
@@ -132,9 +132,37 @@ public class GameManager : MonoBehaviour
         HandleButtonPress(ButtonPressed.Right);
     }
 
+    public void OnConfirmButtonClicked()
+    {
+        if (isGameOver) return;
+
+        Debug.Log("Confirm button pressed. Validating sequence...");
+
+        if (userInputSequence.Count != expectedSequence.Length)
+        {
+            Debug.LogWarning("Sequence length mismatch! Incorrect sequence.");
+            LoseHeart();
+            return;
+        }
+
+        for (int i = 0; i < userInputSequence.Count; i++)
+        {
+            if (userInputSequence[i] != expectedSequence[i])
+            {
+                Debug.LogWarning("Sequence mismatch! Incorrect sequence.");
+                LoseHeart();
+                return;
+            }
+        }
+
+        Debug.Log("Correct sequence entered!");
+        AddScore(1);
+        LoadNextWord();
+    }
+
     private void AddScore(int multiplier)
     {
-        int scoreToAdd = scoreIncrement * multiplier;
+        int scoreToAdd = baseScore * multiplier;
         currentScore += scoreToAdd;
         scoreText.text = currentScore.ToString();
     }
@@ -143,8 +171,8 @@ public class GameManager : MonoBehaviour
     {
         if (heartsRemaining > 0)
         {
-            heartsRemaining--;  // Decrease the heart count
-            UpdateHeartText();  // Update the heart display text
+            heartsRemaining--;
+            UpdateHeartText();
 
             if (heartsRemaining == 0)
             {
@@ -155,13 +183,14 @@ public class GameManager : MonoBehaviour
 
     private void UpdateHeartText()
     {
-        heartText.text = $"Hearts = {heartsRemaining}";  // Update the UI text with current heart count
+        heartText.text = $"Hearts = {heartsRemaining}";
     }
 
     private void GameOver()
     {
         isGameOver = true;
         Debug.Log("Game over!");
-        // Implement game over logic
+
+        SettingsManager.Instance.ChangeSceneToResult();
     }
 }
