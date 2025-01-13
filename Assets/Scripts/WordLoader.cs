@@ -4,7 +4,6 @@ using UnityEngine;
 using System.Linq;
 using System.IO;
 using Unity.VisualScripting;
-using UnityEditor;
 
 public class WordLoader : MonoBehaviour
 {
