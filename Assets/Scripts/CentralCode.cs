@@ -57,7 +57,7 @@ public class CentralCode : MonoBehaviour
         button0.SetActive(true);
         button1.SetActive(true);
         button2.SetActive(true);
-        button3.SetActive(true);
+        button3.SetActive(false);   // Cancelled Feature
         button4.SetActive(true);
     }
 
@@ -125,7 +125,7 @@ public class CentralCode : MonoBehaviour
             button0.SetActive(true);
             button1.SetActive(true);
             button2.SetActive(true);
-            button3.SetActive(true);
+            button3.SetActive(false);
             button4.SetActive(true);
         }
 

@@ -25,7 +25,7 @@ public class PlayPage : MonoBehaviour
     public IEnumerator playOpen()
     {
         PlayUI.SetActive(true);
-
+        
         float elapsedTime = 0f;
         float duration = 1f;
 

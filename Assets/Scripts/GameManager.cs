@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using System.Linq;
 
 public class GameManager : MonoBehaviour
 {
@@ -12,6 +13,7 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI heartText;
     public GameplayWordBlock wordBlock;
     public WordLoader wordLoader;
+    public TextMeshProUGUI sequenceText;
 
     [Header("Game Settings")]
     public int initialHearts = 3;
@@ -78,6 +80,8 @@ public class GameManager : MonoBehaviour
         {
             OnConfirmButtonClicked();
         }
+
+        sequenceText.text = GetSequenceInThai(userInputSequence);
     }
 
     private void InitializeHearts()
@@ -88,7 +92,10 @@ public class GameManager : MonoBehaviour
 
     private void PopulateWordQueue()
     {
-        foreach (var wordData in wordLoader.wordList)
+        // Shuffle the word list randomly
+        var shuffledWordList = wordLoader.wordList.OrderBy(_ => Random.value).ToList();
+
+        foreach (var wordData in shuffledWordList)
         {
             var combinedWord = string.Join("", wordData.words); // Combine words into one displayable string
             wordQueue.Enqueue((combinedWord, wordData.values));
@@ -112,6 +119,8 @@ public class GameManager : MonoBehaviour
             Debug.Log("No more words in queue.");
             GameOver();
         }
+
+        if (wordQueue.Count < 2) PopulateWordQueue();
     }
 
     public void HandleButtonPress(ButtonPressed button)
@@ -141,6 +150,8 @@ public class GameManager : MonoBehaviour
         if (userInputSequence.Count != expectedSequence.Length)
         {
             Debug.LogWarning("Sequence length mismatch! Incorrect sequence.");
+            GameplayWordBlock.Instance.PlayWrongAnimation();
+            userInputSequence.Clear();
             LoseHeart();
             return;
         }
@@ -150,12 +161,15 @@ public class GameManager : MonoBehaviour
             if (userInputSequence[i] != expectedSequence[i])
             {
                 Debug.LogWarning("Sequence mismatch! Incorrect sequence.");
+                GameplayWordBlock.Instance.PlayWrongAnimation();
+                userInputSequence.Clear();
                 LoseHeart();
                 return;
             }
         }
 
         Debug.Log("Correct sequence entered!");
+        GameplayWordBlock.Instance.PlayRightAnimation();
         AddScore(1);
         LoadNextWord();
     }
@@ -192,5 +206,26 @@ public class GameManager : MonoBehaviour
         Debug.Log("Game over!");
 
         SettingsManager.Instance.ChangeSceneToResult();
+    }
+
+    private string GetSequenceInThai(List<ButtonPressed> sequence)
+    {
+        // Map the ButtonPressed values to their Thai equivalents
+        Dictionary<ButtonPressed, string> buttonToThai = new Dictionary<ButtonPressed, string>
+        {
+            { ButtonPressed.Left, "ครุ" },
+            { ButtonPressed.Right, "ลหุ" }
+        };
+
+        List<string> thaiSequence = new List<string>();
+        foreach (var button in sequence)
+        {
+            if (buttonToThai.TryGetValue(button, out string thaiValue))
+            {
+                thaiSequence.Add(thaiValue);
+            }
+        }
+
+        return string.Join("-", thaiSequence); // Join the sequence with hyphens
     }
 }

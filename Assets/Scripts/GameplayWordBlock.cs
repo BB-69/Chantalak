@@ -1,15 +1,32 @@
 using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI; // For UI components
 
 public class GameplayWordBlock : MonoBehaviour
 {
+    public static GameplayWordBlock Instance;
     public RectTransform rectTransform;
     public TextMeshProUGUI textDisplay; // Reference to the child TMP text component
+    private Image imageComponent; // Reference to the Image component
     private int currentIndex = 0;  // Current word index in the sequence
     private string[] words;  // The words that are split for validation
     private GameManager.ButtonPressed[] expectedValues;  // The button presses for each word
+
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+
+        // Cache the reference to the Image component
+        imageComponent = GetComponent<Image>();
+    }
 
     // Initialize with combined words for display and separate button press values for validation
     public void Initialize(string combinedWords, GameManager.ButtonPressed[] values)
@@ -25,9 +42,6 @@ public class GameplayWordBlock : MonoBehaviour
 
         // Reset the index for the current word
         currentIndex = 0;
-
-        // Update the displayed word (the first word in the sequence)
-        //textDisplay.text = words[currentIndex];
     }
 
     // Get current word and its associated button presses for validation
@@ -49,6 +63,8 @@ public class GameplayWordBlock : MonoBehaviour
                 // If we've processed all words, return true
                 if (currentIndex >= words.Length)
                 {
+                    Debug.Log("Correct Animation");
+                    PlayRightAnimation();
                     return true;  // Sequence completed correctly
                 }
 
@@ -74,7 +90,45 @@ public class GameplayWordBlock : MonoBehaviour
     // Play animation or effect for incorrect input
     public void PlayWrongAnimation()
     {
-        Debug.Log("Wrong input animation plays here.");
-        // Implement animation or visual effects for incorrect input if needed
+        Color imgCol = imageComponent.color;
+        imgCol = new Color(imgCol.r, 0f, 0f, imgCol.a); // Set to red
+        imageComponent.color = imgCol;
+
+        float duration = 1f;
+        float elapsedTime = 0f;
+
+        while (elapsedTime < duration)
+        {
+            elapsedTime += Time.deltaTime;
+            imgCol.g = Mathf.Lerp(0f, 1f, elapsedTime / duration);
+            imgCol.b = Mathf.Lerp(0f, 1f, elapsedTime / duration);
+
+            // Update the color
+            imageComponent.color = new Color(imgCol.r, imgCol.g, imgCol.b, imgCol.a);
+
+            //yield return null;
+        }
+    }
+
+    public void PlayRightAnimation()
+    {
+        Color imgCol = imageComponent.color;
+        imgCol = new Color(0f, imgCol.g, 0f, imgCol.a); // Set to green
+        imageComponent.color = imgCol;
+
+        float duration = 1f;
+        float elapsedTime = 0f;
+
+        while (elapsedTime < duration)
+        {
+            elapsedTime += Time.deltaTime;
+            imgCol.r = Mathf.Lerp(0f, 1f, elapsedTime / duration);
+            imgCol.b = Mathf.Lerp(0f, 1f, elapsedTime / duration);
+
+            // Update the color
+            imageComponent.color = new Color(imgCol.r, imgCol.g, imgCol.b, imgCol.a);
+
+            //yield return null;
+        }
     }
 }
