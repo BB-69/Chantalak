@@ -18,9 +18,11 @@ public class WordLoader : MonoBehaviour
         { "right", GameManager.ButtonPressed.Right }
     };
 
-    public void LoadWords(string filePath)
+    public void LoadWords(string fileName)
     {
+        string filePath = Path.Combine(Application.streamingAssetsPath, fileName);
         string[] lines = System.IO.File.ReadAllLines(filePath);
+        
         foreach (var line in lines)
         {
             if (string.IsNullOrWhiteSpace(line)) continue;

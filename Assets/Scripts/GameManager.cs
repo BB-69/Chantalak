@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using System.Linq;
 
 public class GameManager : MonoBehaviour
@@ -43,12 +44,15 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
+        SceneManager.LoadScene("CentralManager", LoadSceneMode.Additive);
+
         Debug.Log("Game starting...");
         InitializeHearts();
-        wordLoader.LoadWords("Assets\\Scripts\\WordList.ini");
+        wordLoader.LoadWords("WordList.ini");
         PopulateWordQueue();
+        LoadNextWord();
 
-        if (wordQueue.Count > 0)
+        /*if (wordQueue.Count > 0)
         {
             LoadNextWord();
         }
@@ -56,7 +60,7 @@ public class GameManager : MonoBehaviour
         {
             Debug.LogError("Word queue is empty at game start!");
             GameOver();
-        }
+        }*/
     }
 
     private void Update()
@@ -146,6 +150,13 @@ public class GameManager : MonoBehaviour
         if (isGameOver) return;
 
         Debug.Log("Confirm button pressed. Validating sequence...");
+
+        if (expectedSequence == null || expectedSequence.Length == 0)
+        {
+            Debug.LogError("Expected sequence is null or empty! Check word list or word queue.");
+            GameOver();
+            return;
+        }
 
         if (userInputSequence.Count != expectedSequence.Length)
         {

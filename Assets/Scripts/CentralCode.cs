@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class CentralCode : MonoBehaviour
 {
@@ -40,6 +41,8 @@ public class CentralCode : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        SceneManager.LoadScene("CentralManager", LoadSceneMode.Additive);
+
         getSideBarSizeDone = false;
         sideBarSize = sideBarObject.GetComponent<Transform> ().localScale;
         getSideBarSizeDone = true;
