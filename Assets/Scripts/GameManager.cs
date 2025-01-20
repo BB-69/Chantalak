@@ -15,15 +15,25 @@ public class GameManager : MonoBehaviour
     public GameplayWordBlock wordBlock;
     public WordLoader wordLoader;
     public TextMeshProUGUI sequenceText;
+    public GameObject[] sequenceButtons;
+    public GameObject[] optionButtons; // Buttons for 4-choice gameplay
+    public UnityEngine.UI.Image imageDisplay; // To show images from ChantalakList
+    public GameObject imageDisplayObject;
 
     [Header("Game Settings")]
     public int initialHearts = 3;
     public int baseScore = 100;
 
     private Queue<(string word, GameManager.ButtonPressed[] values)> wordQueue = new Queue<(string, GameManager.ButtonPressed[])>();
+    private Dictionary<string, Sprite> chantalakImages = new Dictionary<string, Sprite>();
+    private List<string> chantalakWordList = new List<string>(); // Words from ChantalakWordList.ini
+
     private int currentScore = 0;
     private int heartsRemaining;
     private bool isGameOver = false;
+
+    private string currentChantalakWord;
+    private bool inChantalakMode = false;
 
     public enum ButtonPressed { None, Left, Right }
 
@@ -49,6 +59,8 @@ public class GameManager : MonoBehaviour
         Debug.Log("Game starting...");
         InitializeHearts();
         wordLoader.LoadWords("WordList.ini");
+        wordLoader.LoadChantalakWords("ChantalakWordList.ini", ref chantalakWordList);
+        LoadChantalakImages();
         PopulateWordQueue();
         LoadNextWord();
 
@@ -106,17 +118,33 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    private void LoadChantalakImages()
+    {
+        var images = Resources.LoadAll<Sprite>("ChantalakList");
+        foreach (var image in images)
+        {
+            chantalakImages[image.name] = image;
+        }
+    }
+
     public void LoadNextWord()
     {
         if (wordQueue.Count > 0)
         {
-            var nextWord = wordQueue.Dequeue();
-            Debug.Log($"Loading next word sequence: {nextWord.word}");
+            if (Random.value > 0.5f) // 50% chance to enter Chantalak mode
+            {
+                EnterChantalakMode();
+            }
+            else
+            {
+                var nextWord = wordQueue.Dequeue();
+                Debug.Log($"Loading next word sequence: {nextWord.word}");
 
-            wordBlock.Initialize(nextWord.word, nextWord.values);
+                wordBlock.Initialize(nextWord.word, nextWord.values);
 
-            expectedSequence = nextWord.values; // Store expected button sequence
-            userInputSequence.Clear(); // Clear previous user input
+                expectedSequence = nextWord.values; // Store expected button sequence
+                userInputSequence.Clear(); // Clear previous user input
+            }
         }
         else
         {
@@ -125,6 +153,85 @@ public class GameManager : MonoBehaviour
         }
 
         if (wordQueue.Count < 2) PopulateWordQueue();
+    }
+
+    private void EnterChantalakMode()
+    {
+        inChantalakMode = true;
+
+        // Select a random image and corresponding word
+        currentChantalakWord = chantalakWordList[Random.Range(0, chantalakWordList.Count)];
+        imageDisplay.sprite = chantalakImages[currentChantalakWord];
+
+        // Prepare options for 4 buttons
+        var options = new List<string> { currentChantalakWord };
+        while (options.Count < 4)
+        {
+            var randomWord = chantalakWordList[Random.Range(0, chantalakWordList.Count)];
+            if (!options.Contains(randomWord))
+            {
+                options.Add(randomWord);
+            }
+        }
+
+        options = options.OrderBy(_ => Random.value).ToList();
+        for (int i = 0; i < optionButtons.Length; i++)
+        {
+            var button = optionButtons[i].GetComponentInChildren<TextMeshProUGUI>();
+            button.text = options[i];
+
+            var index = i; // Capture index for the lambda
+            optionButtons[i].GetComponent<UnityEngine.UI.Button>().onClick.AddListener(() => OnChantalakButtonClicked(options[index]));
+        }
+
+        foreach (var button in optionButtons)
+        {
+            button.SetActive(true);
+        }
+        imageDisplayObject.SetActive(true);
+        foreach (var button in sequenceButtons)
+        {
+            button.SetActive(false);
+        }
+        wordBlock.gameObject.SetActive(false);
+    }
+
+    private void ExitChantalakMode()
+    {
+        inChantalakMode = false;
+
+        imageDisplayObject.SetActive(false);
+        wordBlock.gameObject.SetActive(true);
+    }
+
+    private void EnterChantalakSequenceMode()
+    {
+        inChantalakMode = true;
+
+        foreach (var button in optionButtons)
+        {
+            button.SetActive(false);
+            button.GetComponent<UnityEngine.UI.Button>().onClick.RemoveAllListeners();
+        }
+        foreach (var button in sequenceButtons)
+        {
+            button.SetActive(true);
+        }
+    }
+
+    private void OnChantalakButtonClicked(string selectedWord)
+    {
+        if (selectedWord == currentChantalakWord)
+        {
+            Debug.Log("Correct Chantalak button pressed!");
+            AddScore(1);
+            EnterChantalakSequenceMode(); // Move to two-button sequence mode
+        }
+        else
+        {
+            Debug.LogWarning("Incorrect Chantalak button pressed!");
+            LoseHeart();
+        }
     }
 
     public void HandleButtonPress(ButtonPressed button)
@@ -151,31 +258,59 @@ public class GameManager : MonoBehaviour
 
         Debug.Log("Confirm button pressed. Validating sequence...");
 
-        if (expectedSequence == null || expectedSequence.Length == 0)
-        {
-            Debug.LogError("Expected sequence is null or empty! Check word list or word queue.");
-            GameOver();
-            return;
-        }
+        if (inChantalakMode){
 
-        if (userInputSequence.Count != expectedSequence.Length)
-        {
-            Debug.LogWarning("Sequence length mismatch! Incorrect sequence.");
-            GameplayWordBlock.Instance.PlayWrongAnimation();
-            userInputSequence.Clear();
-            LoseHeart();
-            return;
-        }
-
-        for (int i = 0; i < userInputSequence.Count; i++)
-        {
-            if (userInputSequence[i] != expectedSequence[i])
+            if (wordQueue.Count > 0)
             {
-                Debug.LogWarning("Sequence mismatch! Incorrect sequence.");
+                var nextWord = wordQueue.Dequeue();
+                Debug.Log($"Loading next word sequence: {nextWord.word}");
+
+                wordBlock.Initialize(nextWord.word, nextWord.values);
+
+                expectedSequence = nextWord.values; // Store expected button sequence
+                userInputSequence.Clear(); // Clear previous user input
+
+                ExitChantalakMode();
+            }
+            else
+            {
+                Debug.Log("No more words in queue.");
+                GameOver();
+            }
+        }
+
+
+
+
+
+        else{
+
+            if (expectedSequence == null || expectedSequence.Length == 0)
+            {
+                Debug.LogError("Expected sequence is null or empty! Check word list or word queue.");
+                GameOver();
+                return;
+            }
+
+            if (userInputSequence.Count != expectedSequence.Length)
+            {
+                Debug.LogWarning("Sequence length mismatch! Incorrect sequence.");
                 GameplayWordBlock.Instance.PlayWrongAnimation();
                 userInputSequence.Clear();
                 LoseHeart();
                 return;
+            }
+
+            for (int i = 0; i < userInputSequence.Count; i++)
+            {
+                if (userInputSequence[i] != expectedSequence[i])
+                {
+                    Debug.LogWarning("Sequence mismatch! Incorrect sequence.");
+                    GameplayWordBlock.Instance.PlayWrongAnimation();
+                    userInputSequence.Clear();
+                    LoseHeart();
+                    return;
+                }
             }
         }
 
