@@ -8,7 +8,7 @@ using Unity.VisualScripting;
 public class WordLoader : MonoBehaviour
 {
     public List<(string[] words, GameManager.ButtonPressed[] values)> wordList = new List<(string[], GameManager.ButtonPressed[])>();
-    public List<(string imageName, string[] options)> chantalakWordList = new List<(string, string[])>();
+    public List<(string imageName, GameManager.ButtonPressed[] options)> chantalakWordList = new List<(string, GameManager.ButtonPressed[])>();
 
     // Define custom mappings
     private readonly Dictionary<string, GameManager.ButtonPressed> valueMappings = new Dictionary<string, GameManager.ButtonPressed>
@@ -36,7 +36,7 @@ public class WordLoader : MonoBehaviour
         }
     }
 
-    public void LoadChantalakWords(string fileName, string folderPath)
+    public void LoadChantalakWords(string fileName)
     {
         string filePath = Path.Combine(Application.streamingAssetsPath, fileName);
         string[] lines = System.IO.File.ReadAllLines(filePath);
@@ -47,15 +47,17 @@ public class WordLoader : MonoBehaviour
 
             var parts = line.Split(',');
             string imageName = parts[0].Trim();
-            string[] options = parts.Skip(1).Select(o => o.Trim()).ToArray();
+            GameManager.ButtonPressed[] options = parts.Skip(1).Select(ParseValue).ToArray();
 
-            if (File.Exists(Path.Combine(folderPath, imageName + ".png")))
+            // Check if the image exists in the Resources folder
+            var image = Resources.Load<Sprite>($"ChantalakList/{imageName}");
+            if (image != null)
             {
-                chantalakWordList.Add((imageName, options));
+                GameManager.Instance.chantalakWordList.Add((imageName, options));
             }
             else
             {
-                Debug.LogWarning($"Image {imageName} not found in folder {folderPath}.");
+                Debug.LogWarning($"Image {imageName} not found in Resources/ChantalakList.");
             }
         }
     }

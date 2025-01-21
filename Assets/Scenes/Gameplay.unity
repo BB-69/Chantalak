@@ -1386,10 +1386,16 @@ MonoBehaviour:
   wordBlock: {fileID: 374755539}
   wordLoader: {fileID: 565560735}
   sequenceText: {fileID: 675623820}
-  chantalakImageDisplay: {fileID: 0}
-  fourButtonContainer: {fileID: 0}
-  twoButtonContainer: {fileID: 0}
-  fourButtonTexts: []
+  sequenceButtons:
+  - {fileID: 794627094}
+  - {fileID: 256834507}
+  optionButtons:
+  - {fileID: 1247868825}
+  - {fileID: 354562204}
+  - {fileID: 1359064336}
+  - {fileID: 898439814}
+  imageDisplay: {fileID: 516324902}
+  imageDisplayObject: {fileID: 516324901}
   initialHearts: 3
   baseScore: 100
 --- !u!114 &565560735

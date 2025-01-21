@@ -25,15 +25,18 @@ public class GameManager : MonoBehaviour
     public int baseScore = 100;
 
     private Queue<(string word, GameManager.ButtonPressed[] values)> wordQueue = new Queue<(string, GameManager.ButtonPressed[])>();
+    private Queue<(string word, GameManager.ButtonPressed[] values)> chantalakQueue = new Queue<(string, GameManager.ButtonPressed[])>();
     private Dictionary<string, Sprite> chantalakImages = new Dictionary<string, Sprite>();
-    private List<string> chantalakWordList = new List<string>(); // Words from ChantalakWordList.ini
+    public List<(string imageName, GameManager.ButtonPressed[] options)> chantalakWordList = new List<(string, GameManager.ButtonPressed[])>();
 
     private int currentScore = 0;
     private int heartsRemaining;
     private bool isGameOver = false;
 
     private string currentChantalakWord;
+    private ButtonPressed[] currentChantalakValue;
     private bool inChantalakMode = false;
+    private bool inChantalakSequenceMode = false;
 
     public enum ButtonPressed { None, Left, Right }
 
@@ -59,7 +62,7 @@ public class GameManager : MonoBehaviour
         Debug.Log("Game starting...");
         InitializeHearts();
         wordLoader.LoadWords("WordList.ini");
-        wordLoader.LoadChantalakWords("ChantalakWordList.ini", ref chantalakWordList);
+        wordLoader.LoadChantalakWords("ChantalakWordList.ini");
         LoadChantalakImages();
         PopulateWordQueue();
         LoadNextWord();
@@ -131,7 +134,7 @@ public class GameManager : MonoBehaviour
     {
         if (wordQueue.Count > 0)
         {
-            if (Random.value > 0.5f) // 50% chance to enter Chantalak mode
+            if (Random.Range(0f, 1f) > 0.5f) // 50% chance to enter Chantalak mode
             {
                 EnterChantalakMode();
             }
@@ -157,17 +160,28 @@ public class GameManager : MonoBehaviour
 
     private void EnterChantalakMode()
     {
+        userInputSequence.Clear();
+
+        if (chantalakWordList.Count == 0)
+        {
+            Debug.LogError("ChantalakWordList is empty. Cannot enter Chantalak mode.");
+            LoadNextWord(); // Fallback to a normal word sequence
+            return;
+        }
+        
         inChantalakMode = true;
 
         // Select a random image and corresponding word
-        currentChantalakWord = chantalakWordList[Random.Range(0, chantalakWordList.Count)];
+        var selectedChantalakEntry = chantalakWordList[Random.Range(0, chantalakWordList.Count)];
+        currentChantalakWord = selectedChantalakEntry.imageName;
+        currentChantalakValue = selectedChantalakEntry.options;
         imageDisplay.sprite = chantalakImages[currentChantalakWord];
 
         // Prepare options for 4 buttons
         var options = new List<string> { currentChantalakWord };
         while (options.Count < 4)
         {
-            var randomWord = chantalakWordList[Random.Range(0, chantalakWordList.Count)];
+            var randomWord = chantalakWordList[Random.Range(0, chantalakWordList.Count)].imageName;
             if (!options.Contains(randomWord))
             {
                 options.Add(randomWord);
@@ -198,7 +212,7 @@ public class GameManager : MonoBehaviour
 
     private void ExitChantalakMode()
     {
-        inChantalakMode = false;
+        inChantalakSequenceMode = false;
 
         imageDisplayObject.SetActive(false);
         wordBlock.gameObject.SetActive(true);
@@ -206,7 +220,15 @@ public class GameManager : MonoBehaviour
 
     private void EnterChantalakSequenceMode()
     {
-        inChantalakMode = true;
+        userInputSequence.Clear();
+        
+        inChantalakMode = false;
+        inChantalakSequenceMode = true;
+
+        chantalakQueue.Enqueue((currentChantalakWord, currentChantalakValue));
+        var nextWord = chantalakQueue.Dequeue();
+        expectedSequence = nextWord.values;
+        userInputSequence.Clear();
 
         foreach (var button in optionButtons)
         {
@@ -258,7 +280,7 @@ public class GameManager : MonoBehaviour
 
         Debug.Log("Confirm button pressed. Validating sequence...");
 
-        if (inChantalakMode){
+        if (inChantalakMode || inChantalakSequenceMode){
 
             if (wordQueue.Count > 0)
             {
@@ -269,8 +291,6 @@ public class GameManager : MonoBehaviour
 
                 expectedSequence = nextWord.values; // Store expected button sequence
                 userInputSequence.Clear(); // Clear previous user input
-
-                ExitChantalakMode();
             }
             else
             {
