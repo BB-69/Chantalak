@@ -10,8 +10,13 @@ public class AudioToggle : MonoBehaviour
     private bool musicToggle, sfxToggle;
     public bool isThisMusic;
     // Start is called before the first frame update
-    void Start()
+    IEnumerator Start()
     {
+        while (GameManager.Instance == null)
+        {
+            yield return null;
+        }
+
         switch (isThisMusic)
         {
             case true:
@@ -26,6 +31,8 @@ public class AudioToggle : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        while (GameManager.Instance == null) return;
+
         switch (isThisMusic)
         {
             case true:

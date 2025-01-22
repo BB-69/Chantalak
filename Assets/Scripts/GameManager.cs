@@ -19,6 +19,8 @@ public class GameManager : MonoBehaviour
     public GameObject[] optionButtons; // Buttons for 4-choice gameplay
     public UnityEngine.UI.Image imageDisplay; // To show images from ChantalakList
     public GameObject imageDisplayObject;
+    public GameObject textSequenceObject;
+    public GameObject screenEffect;
 
     [Header("Game Settings")]
     public int initialHearts = 3;
@@ -41,6 +43,9 @@ public class GameManager : MonoBehaviour
     public enum ButtonPressed { None, Left, Right }
 
     private List<ButtonPressed> userInputSequence = new List<ButtonPressed>(); // Track user's button sequence
+    private Vector2 textSequenceOriginPos;
+    private Vector2 textSequenceCurrentPos;
+    private Vector2 textSequenceTargetPos;
     private ButtonPressed[] expectedSequence; // Store the current sequence to match against
 
     private void Awake()
@@ -66,6 +71,10 @@ public class GameManager : MonoBehaviour
         LoadChantalakImages();
         PopulateWordQueue();
         LoadNextWord();
+        textSequenceCurrentPos = textSequenceObject.GetComponent<RectTransform>().anchoredPosition;
+        textSequenceTargetPos = textSequenceCurrentPos;
+        StartCoroutine(screenEffectAlpha(0f, 0f));
+        
 
         /*if (wordQueue.Count > 0)
         {
@@ -101,6 +110,17 @@ public class GameManager : MonoBehaviour
         }
 
         sequenceText.text = GetSequenceInThai(userInputSequence);
+
+        if (Vector2.Distance(textSequenceCurrentPos, textSequenceTargetPos) > 0.1f){
+            textSequenceCurrentPos = Vector2.MoveTowards(textSequenceCurrentPos, textSequenceTargetPos,
+                Vector2.Distance(textSequenceCurrentPos, textSequenceTargetPos)*0.3f);;
+            textSequenceObject.GetComponent<RectTransform>().anchoredPosition = textSequenceCurrentPos;
+        }
+        if (Vector2.Distance(textSequenceCurrentPos, textSequenceTargetPos) <= 0.1f && textSequenceCurrentPos!=textSequenceTargetPos){
+            textSequenceCurrentPos = textSequenceTargetPos;
+            textSequenceObject.GetComponent<RectTransform>().anchoredPosition = textSequenceCurrentPos;
+        }
+        textSequenceCurrentPos = textSequenceObject.GetComponent<RectTransform>().anchoredPosition;
     }
 
     private void InitializeHearts()
@@ -262,15 +282,19 @@ public class GameManager : MonoBehaviour
 
         Debug.Log($"Button pressed: {button}");
         userInputSequence.Add(button); // Add button press to user input sequence
+
+        if (userInputSequence.Count > 0) textSequenceTargetPos.y = textSequenceOriginPos.y + 120*Mathf.Floor((userInputSequence.Count-1)/8);
     }
 
     public void OnLeftButtonClicked()
     {
+        if (inChantalakMode) return;
         HandleButtonPress(ButtonPressed.Left);
     }
 
     public void OnRightButtonClicked()
     {
+        if (inChantalakMode) return;
         HandleButtonPress(ButtonPressed.Right);
     }
 
@@ -280,7 +304,7 @@ public class GameManager : MonoBehaviour
 
         Debug.Log("Confirm button pressed. Validating sequence...");
 
-        if (inChantalakMode || inChantalakSequenceMode){
+        if (inChantalakMode){
 
             if (wordQueue.Count > 0)
             {
@@ -332,6 +356,10 @@ public class GameManager : MonoBehaviour
                     return;
                 }
             }
+
+            if (inChantalakSequenceMode){
+                ExitChantalakMode();
+            }
         }
 
         Debug.Log("Correct sequence entered!");
@@ -356,8 +384,10 @@ public class GameManager : MonoBehaviour
 
             if (heartsRemaining == 0)
             {
+                StartCoroutine(screenEffectAlpha(1f, 1f));
                 GameOver();
             }
+            StartCoroutine(screenEffectAlpha(0.7f, 0f));
         }
     }
 
@@ -393,5 +423,33 @@ public class GameManager : MonoBehaviour
         }
 
         return string.Join("-", thaiSequence); // Join the sequence with hyphens
+    }
+
+    private IEnumerator screenEffectAlpha(float alphaBefore, float alphaAfter)
+    {
+        if (alphaBefore != 0f){
+            screenEffect.SetActive(true);
+        }
+
+        var screenCol = screenEffect.GetComponent<Renderer>().material.color;
+        screenCol = new Color(screenCol.r, screenCol.g, screenCol.b, alphaBefore);
+
+        if (alphaBefore == alphaAfter) yield break;
+
+        float elapsedTime = 0f;
+        float duration = 0.5f;
+
+        while (elapsedTime < duration){
+            screenCol.a = Mathf.Lerp(alphaBefore, alphaAfter, elapsedTime/duration);
+            screenEffect.GetComponent<Renderer>().material.color = screenCol;
+            elapsedTime += Time.deltaTime;
+            yield return null;
+        }
+        screenCol.a = alphaAfter;
+        screenEffect.GetComponent<Renderer>().material.color = screenCol;
+
+        if (alphaAfter == 0f){
+            screenEffect.SetActive(false);
+        }
     }
 }

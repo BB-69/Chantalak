@@ -8,9 +8,14 @@ public class AudioSourceRegister : MonoBehaviour
     private AudioSource source;
     public bool isMusic = false; // Set this in the Inspector to true for music sources, false for SFX
 
-    private void Start()
+    private IEnumerator Start()
     {
-        if (source == null) return;
+        while (GameManager.Instance == null)
+        {
+            yield return null;
+        }
+
+        if (source == null) yield break;
 
         if (isMusic)
         {

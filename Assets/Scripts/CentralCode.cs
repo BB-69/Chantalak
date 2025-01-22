@@ -290,10 +290,8 @@ public class CentralCode : MonoBehaviour
 
     public void exitClicked()
     {
-        StartCoroutine(menuOpen("exit"));
-
         Application.Quit();
-        
+        StartCoroutine(menuOpen("exit"));
     }
 
 
@@ -451,7 +449,7 @@ public class CentralCode : MonoBehaviour
         else if (menuClicked == "info"){bgElement = bgInfo;}
         else if (menuClicked == "exit"){bgElement = bgExit;}
 
-        if (colBefore == 1f){
+        if (colBefore != 0f){
             bgElement.SetActive(true);
         }
         float duration = 0.6f;

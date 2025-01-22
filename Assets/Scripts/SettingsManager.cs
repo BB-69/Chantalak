@@ -53,7 +53,7 @@ public class SettingsManager : MonoBehaviour
 
     private void Awake()
     {
-        CameraCurrent = Camera.Gameplay;
+        CameraCurrent = Camera.Menu;
         if (Instance == null)
         {
             Instance = this;

@@ -22,8 +22,13 @@ public class GameplaySettingsUI : MonoBehaviour
 
     private TMP_InputField currentInputField;
 
-    private void Start()
+    private IEnumerator Start()
     {
+        while (GameManager.Instance == null)
+        {
+            yield return null;
+        }
+        
         InitializeUI();
         clearDataButton.onClick.AddListener(ClearData);
     }

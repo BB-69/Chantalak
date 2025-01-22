@@ -12,8 +12,13 @@ public class KeyBinder : MonoBehaviour
 
     private bool isRebinding = false;
 
-    private void Start()
+    private IEnumerator Start()
     {
+        while (GameManager.Instance == null)
+        {
+            yield return null;
+        }
+
         UpdateKeyText();
     }
 

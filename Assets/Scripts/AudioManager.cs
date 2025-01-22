@@ -26,8 +26,13 @@ public class AudioManager : MonoBehaviour
         }
     }
 
-    private void Start()
+    private IEnumerator Start()
     {
+        while (GameManager.Instance == null)
+        {
+            yield return null;
+        }
+        
         // Initialize audio settings
         UpdateMusicSettings();
         UpdateSFXSettings();
