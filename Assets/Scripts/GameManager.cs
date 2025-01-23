@@ -251,7 +251,7 @@ public class GameManager : MonoBehaviour
     {
         if (wordQueue.Count > 0)
         {
-            if (Random.Range(0f, 1f) > 0.1f) // 10% chance to enter Chantalak mode
+            if (Random.Range(0f, 1f) > 0.9f) // 10% chance to enter Chantalak mode
             {
                 EnterChantalakMode();
             }
