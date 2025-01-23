@@ -97,6 +97,13 @@ public class ButtonBehaviour_Secondary : MonoBehaviour, IPointerEnterHandler, IP
 
     public void OnPointerDown(PointerEventData eventData)
     {
+        if (!Application.isEditor && thisMenu == "options"){    // Remove this if you fully implemented
+            return;                                             // options functionality
+        }                                                       //
+        if (!Application.isEditor && thisMenu == "exit"){       // Idk why here but it's indeed easier
+            Application.Quit();                                 //
+        }                                                       //
+
         if (centralCode.isAnimating) return;
 
         if (!isReverse)
@@ -109,10 +116,6 @@ public class ButtonBehaviour_Secondary : MonoBehaviour, IPointerEnterHandler, IP
         {
             if (!isReverse)
             {
-                if (!Application.isEditor && thisMenu == "options"){    // Remove this if you fully implemented
-                    return;                                             // options functionality
-                }                                                       //
-
                 StartCoroutine(AnimateButton());
             }
             else

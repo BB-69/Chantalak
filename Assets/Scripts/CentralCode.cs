@@ -168,6 +168,10 @@ public class CentralCode : MonoBehaviour
 
     public void buttonClicked(string button)
     {
+        if (!Application.isEditor && button == "button2"){      // Remove this if you fully implemented
+            return;                                             // options functionality
+        }                                                       //
+
         if (!buttonIsActivating)
         {
             buttonIsActivating = true;
