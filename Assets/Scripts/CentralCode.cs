@@ -313,7 +313,6 @@ public class CentralCode : MonoBehaviour
 
         else if (menuClicked == "options")
         {
-            
             StartCoroutine(optionPage.optionOpen());
         }
 
@@ -341,7 +340,6 @@ public class CentralCode : MonoBehaviour
 
         else if (menuClicked == "options")
         {
-            
             StopCoroutine(optionPage.optionOpen());
             StartCoroutine(optionPage.optionClose());
         }

@@ -12,7 +12,7 @@ public class AudioToggle : MonoBehaviour
     // Start is called before the first frame update
     IEnumerator Start()
     {
-        while (GameManager.Instance == null)
+        while (SettingsManager.Instance == null)
         {
             yield return null;
         }
@@ -31,7 +31,7 @@ public class AudioToggle : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        while (GameManager.Instance == null) return;
+        while (SettingsManager.Instance == null) return;
 
         switch (isThisMusic)
         {

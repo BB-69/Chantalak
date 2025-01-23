@@ -14,7 +14,7 @@ public class CameraMenu : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        while (GameManager.Instance == null) return;
+        while (SettingsManager.Instance == null) return;
         
         if (SettingsManager.Instance.CameraCurrent == SettingsManager.Camera.Menu)
         {

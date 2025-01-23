@@ -14,7 +14,7 @@ public class KeyBinder : MonoBehaviour
 
     private IEnumerator Start()
     {
-        while (GameManager.Instance == null)
+        while (SettingsManager.Instance == null)
         {
             yield return null;
         }

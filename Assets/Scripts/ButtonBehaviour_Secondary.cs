@@ -109,6 +109,10 @@ public class ButtonBehaviour_Secondary : MonoBehaviour, IPointerEnterHandler, IP
         {
             if (!isReverse)
             {
+                if (!Application.isEditor && thisMenu == "options"){    // Remove this if you fully implemented
+                    return;                                             // options functionality
+                }                                                       //
+
                 StartCoroutine(AnimateButton());
             }
             else

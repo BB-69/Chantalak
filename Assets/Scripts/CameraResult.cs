@@ -14,6 +14,8 @@ public class CameraResult : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        while (SettingsManager.Instance == null) return;
+        
         if (SettingsManager.Instance.CameraCurrent == SettingsManager.Camera.Result)
         {
             gameObject.SetActive(true);

@@ -4,6 +4,8 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Linq;
+using UnityEngine.UI;
+using Unity.VisualScripting;
 
 public class GameManager : MonoBehaviour
 {
@@ -15,16 +17,24 @@ public class GameManager : MonoBehaviour
     public GameplayWordBlock wordBlock;
     public WordLoader wordLoader;
     public TextMeshProUGUI sequenceText;
+    public TextMeshProUGUI sequenceTextCounter;
     public GameObject[] sequenceButtons;
     public GameObject[] optionButtons; // Buttons for 4-choice gameplay
     public UnityEngine.UI.Image imageDisplay; // To show images from ChantalakList
     public GameObject imageDisplayObject;
     public GameObject textSequenceObject;
     public GameObject screenEffect;
+    public Button confirmButton;
+
+    [Header("Game Settings")]
+    public AudioSource pressSound;
 
     [Header("Game Settings")]
     public int initialHearts = 3;
-    public int baseScore = 100;
+    public float baseScore = 100f;
+    private float scoreMultiplier = 1f;
+    private float streakEffect = 1f;
+    private float scoreMultiplierTime = 1f;
 
     private Queue<(string word, GameManager.ButtonPressed[] values)> wordQueue = new Queue<(string, GameManager.ButtonPressed[])>();
     private Queue<(string word, GameManager.ButtonPressed[] values)> chantalakQueue = new Queue<(string, GameManager.ButtonPressed[])>();
@@ -39,10 +49,13 @@ public class GameManager : MonoBehaviour
     private ButtonPressed[] currentChantalakValue;
     private bool inChantalakMode = false;
     private bool inChantalakSequenceMode = false;
+    public bool isKeyboard = false;
+    public int currentButton;
 
     public enum ButtonPressed { None, Left, Right }
 
     private List<ButtonPressed> userInputSequence = new List<ButtonPressed>(); // Track user's button sequence
+    private int sequenceCount = 0;
     private Vector2 textSequenceOriginPos;
     private Vector2 textSequenceCurrentPos;
     private Vector2 textSequenceTargetPos;
@@ -66,6 +79,7 @@ public class GameManager : MonoBehaviour
 
         Debug.Log("Game starting...");
         InitializeHearts();
+        InitializeSequenceTextCounter(false);
         wordLoader.LoadWords("WordList.ini");
         wordLoader.LoadChantalakWords("ChantalakWordList.ini");
         LoadChantalakImages();
@@ -74,6 +88,7 @@ public class GameManager : MonoBehaviour
         textSequenceCurrentPos = textSequenceObject.GetComponent<RectTransform>().anchoredPosition;
         textSequenceTargetPos = textSequenceCurrentPos;
         StartCoroutine(screenEffectAlpha(0f, 0f));
+        currentButton = 1;
         
 
         /*if (wordQueue.Count > 0)
@@ -91,29 +106,36 @@ public class GameManager : MonoBehaviour
     {
         if (isGameOver) return;
 
+        if (inChantalakMode) confirmButton.interactable = false;
+        else confirmButton.interactable = true;
+
         // Handle Left Button Press from Keyboard
         if (Input.GetKeyDown(KeyCode.Z) || Input.GetKeyDown(KeyCode.LeftArrow))
         {
             OnLeftButtonClicked();
+            PlaySound(pressSound);
         }
 
         // Handle Right Button Press from Keyboard
         if (Input.GetKeyDown(KeyCode.X) || Input.GetKeyDown(KeyCode.RightArrow))
         {
             OnRightButtonClicked();
+            PlaySound(pressSound);
         }
 
         // Handle Confirm Button Press from Keyboard
         if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.Space))
         {
             OnConfirmButtonClicked();
+            PlaySound(pressSound);
         }
 
         sequenceText.text = GetSequenceInThai(userInputSequence);
 
+        // Handle sequence text position for every set of 8 words
         if (Vector2.Distance(textSequenceCurrentPos, textSequenceTargetPos) > 0.1f){
             textSequenceCurrentPos = Vector2.MoveTowards(textSequenceCurrentPos, textSequenceTargetPos,
-                Vector2.Distance(textSequenceCurrentPos, textSequenceTargetPos)*0.3f);;
+                Vector2.Distance(textSequenceCurrentPos, textSequenceTargetPos)*0.05f);;
             textSequenceObject.GetComponent<RectTransform>().anchoredPosition = textSequenceCurrentPos;
         }
         if (Vector2.Distance(textSequenceCurrentPos, textSequenceTargetPos) <= 0.1f && textSequenceCurrentPos!=textSequenceTargetPos){
@@ -123,10 +145,85 @@ public class GameManager : MonoBehaviour
         textSequenceCurrentPos = textSequenceObject.GetComponent<RectTransform>().anchoredPosition;
     }
 
+    private void PlaySound(AudioSource audioSource)
+    {
+        if (audioSource != null)
+        {
+            audioSource.Play();
+        }
+    }
+
     private void InitializeHearts()
     {
         heartsRemaining = initialHearts;
         UpdateHeartText();
+    }
+
+    private void InitializeSequenceTextCounter(bool upText)
+    {
+        var textCol = sequenceTextCounter.GetComponent<TextMeshProUGUI>().color;
+
+        if (upText){
+            sequenceCount++;
+            if (sequenceCount > 4){
+                scoreMultiplier+=0.1f;
+            }
+
+            if (expectedSequence.Length > 30){
+                if (userInputSequence.Count > expectedSequence.Length*1/4){
+                    textCol = color("blue");
+                    scoreMultiplier+=0.1f;
+                }
+                if (userInputSequence.Count > expectedSequence.Length*2/4){
+                    textCol = color("purple");
+                    scoreMultiplier+=0.2f;
+                }
+                if (userInputSequence.Count > expectedSequence.Length*3/4){
+                    textCol = color("orange");
+                    scoreMultiplier+=0.3f;
+                }
+            }
+            else if (expectedSequence.Length > 12){
+                if (userInputSequence.Count > expectedSequence.Length/2){
+                    textCol = color("blue");
+                    scoreMultiplier+=0.1f;
+                }
+            }
+
+            sequenceTextCounter.text = $"{sequenceCount}";
+        }
+        else {
+            textCol = color("black");
+            scoreMultiplier=1f;
+            streakEffect=1f;
+            sequenceCount=0;
+            sequenceTextCounter.text = "";
+        }
+        sequenceTextCounter.GetComponent<TextMeshProUGUI>().color = textCol;
+    }
+
+    private Color color(string col)
+    {
+        Color colValue = new Color(0f, 0f, 0f, 0f);
+        switch(col)
+        {
+            case "black":
+                colValue = new Color(0f, 0f, 0f, 1f);
+                break;
+            case "blue":
+                colValue = new Color(0f, 0f, 1f, 1f);
+                break;
+            case "purple":
+                colValue = new Color(1f, 0f, 1f, 1f);
+                break;
+            case "orange":
+                colValue = new Color(1f, 0.5f, 0f, 1f);
+                break;
+            case "green":
+                colValue = new Color(0f, 1f, 0f, 1f);
+                break;
+        }
+        return colValue;
     }
 
     private void PopulateWordQueue()
@@ -154,7 +251,7 @@ public class GameManager : MonoBehaviour
     {
         if (wordQueue.Count > 0)
         {
-            if (Random.Range(0f, 1f) > 0.5f) // 50% chance to enter Chantalak mode
+            if (Random.Range(0f, 1f) > 0.1f) // 10% chance to enter Chantalak mode
             {
                 EnterChantalakMode();
             }
@@ -273,6 +370,7 @@ public class GameManager : MonoBehaviour
         {
             Debug.LogWarning("Incorrect Chantalak button pressed!");
             LoseHeart();
+            return;
         }
     }
 
@@ -284,18 +382,27 @@ public class GameManager : MonoBehaviour
         userInputSequence.Add(button); // Add button press to user input sequence
 
         if (userInputSequence.Count > 0) textSequenceTargetPos.y = textSequenceOriginPos.y + 120*Mathf.Floor((userInputSequence.Count-1)/8);
+        InitializeSequenceTextCounter(true);
     }
 
     public void OnLeftButtonClicked()
     {
-        if (inChantalakMode) return;
-        HandleButtonPress(ButtonPressed.Left);
+        if (inChantalakMode){
+            if (currentButton == 1) currentButton = 4;
+            else if (isKeyboard) currentButton--;
+            if (!isKeyboard) isKeyboard = true;
+        }
+        else HandleButtonPress(ButtonPressed.Left);
     }
 
     public void OnRightButtonClicked()
     {
-        if (inChantalakMode) return;
-        HandleButtonPress(ButtonPressed.Right);
+        if (inChantalakMode){
+            if (currentButton == 4) currentButton = 1;
+            else if (isKeyboard) currentButton++;
+            if (!isKeyboard) isKeyboard = true;
+        }
+        else HandleButtonPress(ButtonPressed.Right);
     }
 
     public void OnConfirmButtonClicked()
@@ -305,8 +412,8 @@ public class GameManager : MonoBehaviour
         Debug.Log("Confirm button pressed. Validating sequence...");
 
         if (inChantalakMode){
-
-            if (wordQueue.Count > 0)
+            
+            /*if (wordQueue.Count > 0)
             {
                 var nextWord = wordQueue.Dequeue();
                 Debug.Log($"Loading next word sequence: {nextWord.word}");
@@ -320,7 +427,11 @@ public class GameManager : MonoBehaviour
             {
                 Debug.Log("No more words in queue.");
                 GameOver();
-            }
+            }*/
+
+            if (currentButton == 0) return;
+            OnChantalakButtonClicked(optionButtons[currentButton-1].GetComponentInChildren<TextMeshProUGUI>().text);
+            return;
         }
 
 
@@ -341,6 +452,7 @@ public class GameManager : MonoBehaviour
                 Debug.LogWarning("Sequence length mismatch! Incorrect sequence.");
                 GameplayWordBlock.Instance.PlayWrongAnimation();
                 userInputSequence.Clear();
+                InitializeSequenceTextCounter(false);
                 LoseHeart();
                 return;
             }
@@ -352,6 +464,7 @@ public class GameManager : MonoBehaviour
                     Debug.LogWarning("Sequence mismatch! Incorrect sequence.");
                     GameplayWordBlock.Instance.PlayWrongAnimation();
                     userInputSequence.Clear();
+                    InitializeSequenceTextCounter(false);
                     LoseHeart();
                     return;
                 }
@@ -364,15 +477,30 @@ public class GameManager : MonoBehaviour
 
         Debug.Log("Correct sequence entered!");
         GameplayWordBlock.Instance.PlayRightAnimation();
-        AddScore(1);
+        AddScore(scoreMultiplier);
+        InitializeSequenceTextCounter(false);
         LoadNextWord();
     }
 
-    private void AddScore(int multiplier)
+
+
+
+
+
+
+
+
+
+
+    private void AddScore(float multiplier)
     {
-        int scoreToAdd = baseScore * multiplier;
+        StopCoroutine(textFlash(color("green"),scoreText));
+
+        int scoreToAdd = Mathf.RoundToInt(baseScore * multiplier);
         currentScore += scoreToAdd;
         scoreText.text = currentScore.ToString();
+
+        StartCoroutine(textFlash(color("green"),scoreText));
     }
 
     private void LoseHeart()
@@ -381,10 +509,11 @@ public class GameManager : MonoBehaviour
         {
             heartsRemaining--;
             UpdateHeartText();
+            StopCoroutine(screenEffectAlpha(0.7f, 0f));
 
             if (heartsRemaining == 0)
             {
-                StartCoroutine(screenEffectAlpha(1f, 1f));
+                StartCoroutine(screenEffectAlpha(0f, 1f));
                 GameOver();
             }
             StartCoroutine(screenEffectAlpha(0.7f, 0f));
@@ -451,5 +580,28 @@ public class GameManager : MonoBehaviour
         if (alphaAfter == 0f){
             screenEffect.SetActive(false);
         }
+    }
+
+    private IEnumerator textFlash(Color col, TextMeshProUGUI text)
+    {
+        var currentCol = text.color;
+        var newCol = col;
+
+        if (currentCol == newCol) yield break;
+
+        float elapsedTime = 0f;
+        float duration = 0.5f;
+
+        text.color = newCol;
+        while (elapsedTime < duration){
+            col.r = Mathf.Lerp(newCol.r, currentCol.r, elapsedTime/duration);
+            col.g = Mathf.Lerp(newCol.g, currentCol.g, elapsedTime/duration);
+            col.b = Mathf.Lerp(newCol.b, currentCol.b, elapsedTime/duration);
+            col.a = Mathf.Lerp(newCol.a, currentCol.a, elapsedTime/duration);
+            text.color = col;
+            elapsedTime += Time.deltaTime;
+            yield return null;
+        }
+        text.color = currentCol;
     }
 }
