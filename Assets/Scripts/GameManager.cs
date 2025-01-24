@@ -26,7 +26,7 @@ public class GameManager : MonoBehaviour
     public GameObject screenEffect;
     public Button confirmButton;
 
-    [Header("Game Settings")]
+    [Header("AudioSource")]
     public AudioSource pressSound;
 
     [Header("Game Settings")]
@@ -80,8 +80,8 @@ public class GameManager : MonoBehaviour
         Debug.Log("Game starting...");
         InitializeHearts();
         InitializeSequenceTextCounter(false);
-        wordLoader.LoadWords("WordList.ini");
-        wordLoader.LoadChantalakWords("ChantalakWordList.ini");
+        wordLoader.ParseWordListData();
+        wordLoader.ParseChantalakWordListData();
         LoadChantalakImages();
         PopulateWordQueue();
         LoadNextWord();
@@ -553,6 +553,15 @@ public class GameManager : MonoBehaviour
 
         return string.Join("-", thaiSequence); // Join the sequence with hyphens
     }
+
+
+
+
+
+
+
+
+
 
     private IEnumerator screenEffectAlpha(float alphaBefore, float alphaAfter)
     {
